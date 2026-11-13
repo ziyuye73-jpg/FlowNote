@@ -48,6 +48,12 @@ Codex 使用浏览器工具执行，并检查结果
 
 ---
 
+## 🖥️ 桌面端第一版
+
+新增 Electron 桌面控制台，支持导入并编辑录制、生成 Skill、打开专用 Chromium 登录会话，以及运行抖音视频上传和标题话题填写，停在发布前。任意录制目前用于管理和导出 Skill；桌面执行器提供固定的抖音发布准备流程。运行、构建和验证方法见 [桌面端说明](desktop/README.md)。
+
+源码启动：`npm ci` → `npx playwright install chromium` → `npm run desktop`。需要 Node.js 22+ 和 Python 3.10+。桌面安装包构建时包含 Chromium，转换器仍使用本机 Python。
+
 ## 🚀 快速开始
 
 ### 1. 安装浏览器录制扩展（首次手动加载）

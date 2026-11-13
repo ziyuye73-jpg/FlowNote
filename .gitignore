@@ -22,3 +22,13 @@ android-app/app/build/
 dist/*.apk
 
 dist/*.zip
+.desktop-browsers/
+dist/desktop/
+dist/desktop-preview.png
+trial-skills/
+.env
+.env.*
+model.json
+selected-flow.json
+browser-profile/
+recordings/

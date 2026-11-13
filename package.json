@@ -3,10 +3,23 @@
   "version": "0.8.1",
   "private": true,
   "description": "FlowNote browser recorder for macOS and Windows",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "test": "node --test tests/core.test.cjs teleprompter/tests/core.test.mjs",
-    "test:browser": "node tests/browser-smoke.cjs"
+    "test:browser": "node tests/browser-smoke.cjs",
+    "test:desktop": "node --test tests/desktop-*.test.cjs",
+    "desktop": "electron .",
+    "desktop:browser": "node desktop/install-browser.cjs",
+    "desktop:pack": "electron-builder --config desktop/builder.json --dir",
+    "desktop:dist": "electron-builder --config desktop/builder.json"
   },
-  "devDependencies": { "playwright": "1.58.2" }
+  "devDependencies": {
+    "electron": "45.3.1",
+    "electron-builder": "26.18.0"
+  },
+  "dependencies": { "playwright": "1.58.2" },
+  "main": "desktop/main.cjs",
+  "author": "FlowNote contributors"
 }

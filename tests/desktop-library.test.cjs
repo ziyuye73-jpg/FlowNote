@@ -1,0 +1,21 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const fs=require('node:fs/promises');
+const path=require('node:path');
+const os=require('node:os');
+const {RecordingLibrary}=require('../desktop/library.cjs');
+test('recordings persist across instances, deduplicate and reject unsafe identifiers',async()=>{
+ const directory=await fs.mkdtemp(path.join(os.tmpdir(),'flownote-library-'));
+ const library=new RecordingLibrary(directory);
+ const data={title:'抖音测试',steps:[{id:1}],branches:[]};
+ const id=await library.add(data);
+ assert.equal(await library.add(data),id);
+ const other=new RecordingLibrary(directory);
+ assert.equal((await other.list()).length,1);
+ assert.equal((await other.list())[0].title,'抖音测试');
+ assert.deepEqual(JSON.parse(await fs.readFile(other.file(id),'utf8')),data);
+ assert.throws(()=>other.file('../escape'));
+ assert.throws(()=>other.file('constructor'));
+ await fs.writeFile(path.join(directory,'a'.repeat(64)+'.json'),'broken');
+ assert.equal((await other.list()).length,1);
+});

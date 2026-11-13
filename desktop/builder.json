@@ -1,0 +1,16 @@
+{
+  "appId": "com.flownote.desktop",
+  "productName": "FlowNote",
+  "directories": { "output": "dist/desktop" },
+  "files": ["desktop/**/*", "extension/icons/icon48.png", "package.json"],
+  "asar": true,
+  "extraResources": [
+    { "from": "extension", "to": "extension" },
+    { "from": "scripts", "to": "scripts", "filter": ["*.py", "*.ps1", "*.sh"] },
+    { "from": ".desktop-browsers", "to": "browsers" }
+  ],
+  "mac": { "target": ["dmg", "zip"], "category": "public.app-category.productivity" },
+  "win": { "target": ["nsis"] },
+  "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true },
+  "artifactName": "FlowNote-${version}-${os}-${arch}.${ext}"
+}
