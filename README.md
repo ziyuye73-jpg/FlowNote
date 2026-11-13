@@ -3,9 +3,9 @@
 > 把浏览器里的一次操作演示，变成可复用的自动化工作流。
 > 录屏式的演示 → 条件分支 → 导出 JSON → Codex 整理成 Skill → 由 Codex 执行。
 
-FlowNote 是面向 Windows 用户的**浏览器工作流录制工具**，由 Chrome / Edge 扩展（Manifest V3）和 Codex 插件两部分组成。你在网页上演示一遍操作（填表、拖动、排序、滚动、查询、下载报表……），扩展会记录关键步骤；你可以补充说明、添加等待和条件分支并导出 JSON，再由 Codex 整理成可编辑、可复用的 Skill，之后交给 Codex 按实时页面执行。
+FlowNote 是面向 macOS 和 Windows 用户的**浏览器工作流录制工具**，由 Chrome / Edge 扩展（Manifest V3）和 Codex 插件两部分组成。你在网页上演示一遍操作（填表、拖动、排序、滚动、查询、下载报表……），扩展会记录关键步骤；你可以补充说明、添加等待和条件分支并导出 JSON，再由 Codex 整理成可编辑、可复用的 Skill，之后交给 Codex 按实时页面执行。
 
-**当前版本：v0.8.0**（含自解释拖动 JSON、滚动识别、可配置等待和条件分支）。显示名称为 **FlowNote · 流程笔记**；为了兼容已有安装和录制文件，内部插件 ID、Skill 名称及录制来源标识仍使用 `windows-record-replay`。
+**当前版本：v0.8.1**（含自解释拖动 JSON、滚动识别、可配置等待和条件分支）。显示名称为 **FlowNote · 流程笔记**；为了兼容已有安装和录制文件，内部插件 ID、Skill 名称及录制来源标识仍使用 `windows-record-replay`。
 
 ---
 
@@ -44,7 +44,7 @@ Codex 使用浏览器工具执行，并检查结果
 
 扩展负责**记录**操作；Python 转换器负责**校验和整理**录制文件；Codex 负责**理解流程、补齐运行参数、观察实时页面并执行**。执行阶段需要可用的浏览器控制工具（如 Codex 浏览器工具或 Kimi 浏览器扩展）。
 
-> 独立实现，非 OpenAI 官方 Record & Replay，未接入其私有录制接口。不录制 Windows 桌面软件，不提供扩展内"一键盲播"。转换完成的 Skill 初始状态为"需要实际运行验证"——录制到一次点击并不代表业务操作成功，执行时仍需检查下载文件、查询结果或页面反馈。
+> 独立实现，非 OpenAI 官方 Record & Replay，未接入其私有录制接口。不录制操作系统桌面软件，不提供扩展内"一键盲播"。转换完成的 Skill 初始状态为"需要实际运行验证"——录制到一次点击并不代表业务操作成功，执行时仍需检查下载文件、查询结果或页面反馈。
 
 ---
 
@@ -86,19 +86,43 @@ codex plugin add windows-record-replay@personal
 
 ### 4. 本地转换命令（可选）
 
+需要 **Python 3.10+**，仅使用标准库。macOS（Terminal，项目根目录）：
+
+```sh
+sh scripts/convert-recording.sh "/Users/yourname/Downloads/recording.json" --name daily-report-download
+```
+
+Windows（PowerShell，项目根目录，支持 `py -3`、`python3` 或 `python`）：
+
 ```powershell
-powershell.exe -NoProfile -File .\scripts\Convert-Recording.ps1 -Recording "C:\path\wrr-recording.json" -Name daily-report-download
+powershell.exe -NoProfile -File .\scripts\Convert-Recording.ps1 -Recording "C:\Users\yourname\Downloads\recording.json" -Name daily-report-download
 ```
 
-输出默认位于 `%USERPROFILE%\.codex\skills\daily-report-download`。只需 Python 3.10+ 标准库；也可直接运行：
+两端均可直接使用 Python；macOS 通常使用 `python3`，Windows 通常使用 `py -3`：
 
-```text
-python scripts/recording_to_skill.py recording.json --name daily-report-download --output ./generated-skills
+```sh
+python3 scripts/recording_to_skill.py "recording.json" --name daily-report-download --output "./generated-skills"
 ```
+
+不传 `--output` / `-Output` 时默认安装到当前用户的 `~/.codex/skills/<name>`（Windows 对应 `%USERPROFILE%\.codex\skills\<name>`）。路径含空格、中文时加引号。入口可通过环境变量 `FLOWNOTE_PYTHON` 指定 Python 可执行文件。Skill 名称拒绝 Windows 保留设备名（如 `con`、`nul`），保证生成目录可跨端使用。
 
 转换器会生成 Skill 草稿和结构化工作流，保留"尚未实测"状态。重复名称会报错，已有 Skill 不会被覆盖。
 
 ---
+
+## 💻 双端支持与分发
+
+macOS（Apple Silicon / Intel）和 Windows 10 / 11 使用同一份扩展，在 Chrome / Edge 114+ 中加载；建议更新到当前稳定版。首次加载时 macOS 在 Finder 中选择 `extension` 文件夹，Windows 在资源管理器中选择。此项目是浏览器扩展和 Codex 插件，不需要桌面安装程序；Safari 不支持此 Chromium 扩展。
+
+可在两端交换导出的 JSON 和生成的 Skill；网页登录状态、下载目录以及浏览器连接在目标机器上重新配置。普通 Enter / Escape 会录制；带 Command / Control / Option / Alt / Shift 的 Enter / Escape 会保存为手动步骤，执行时确认目标平台等效快捷键，避免误当成普通回车。
+
+生成双端共用安装包（在项目根目录执行）：
+
+```sh
+python3 scripts/package_release.py
+```
+
+Windows 将 `python3` 换为 `py -3`。输出 `dist/FlowNote-macOS-Windows.zip`，包含扩展、Codex 插件、两端转换入口及说明，不包含录制数据。解压到固定位置后按快速开始加载扩展；打包不会自动安装到浏览器或 Codex。已有同名压缩包会拒绝覆盖，可用 `--output` 指定新路径。
 
 ## ⏱️ 固定等待
 
@@ -190,6 +214,18 @@ python scripts/recording_to_skill.py recording.json --name daily-report-download
 - `tests/core.test.cjs`：不依赖浏览器，验证自解释拖动字段、旧字段兼容和非法元数据拒绝。
 - `tests/browser-smoke.cjs`：在隔离 Chromium 用户目录和本地测试页面上验证扩展实际录制、拖动、滚动、等待步骤和分支流程（需要 Node.js、Playwright 和 Chromium；可用 `WRR_PLAYWRIGHT` / `WRR_CHROMIUM` 环境变量指定本地运行时）。
 
+以下开发检查用于完整源码 checkout（分发 ZIP 不含开发依赖和测试；需要 Node.js 22+，Python 3.10+）：
+
+```sh
+python3 -m unittest discover -s tests -v
+npm ci
+npm test
+npx playwright install chromium
+npm run test:browser
+```
+
+Windows 第一行改为 `py -3 -m unittest discover -s tests -v`。GitHub Actions 在 `macos-latest` / `windows-latest` 上运行上述检查和 ZIP 打包。新增跨平台测试覆盖中文及空格路径、入口失败退出、已有 Skill 保护及分发内容；转换器另有 schema v3 稀疏 ID 和分支参数回归测试。
+
 > 浏览器端"加载已解压扩展"和真实业务网站的兼容性需要在用户浏览器中验证；测试通过不代表所有网站都兼容。
 
 ---
@@ -208,7 +244,9 @@ FlowNote/
 │   └── icons/                         SVG 源图与不同尺寸 PNG 图标
 ├── scripts/
 │   ├── recording_to_skill.py          录制校验与 Skill 转换
-│   └── Convert-Recording.ps1          Windows 转换入口
+│   ├── Convert-Recording.ps1          Windows 转换入口
+│   ├── convert-recording.sh           macOS 转换入口
+│   └── package_release.py            双端 ZIP 打包
 ├── skills/windows-record-replay/SKILL.md  Codex 使用指引
 ├── tests/                             转换器测试及隔离浏览器测试
 └── README.md                          本文档

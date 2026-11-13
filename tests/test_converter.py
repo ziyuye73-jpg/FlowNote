@@ -169,6 +169,24 @@ class ConversionTests(unittest.TestCase):
         raw['steps'].pop(0)
         self.assertEqual(converter.convert(raw,'branched-report')['branches'][0]['afterStepId'],3)
 
+    def test_v3_sparse_ids_preserve_anchors_and_unique_parameters(self):
+        raw=self.branched_data()
+        raw['schemaVersion']=3
+        raw['steps'].pop(0)
+        raw['steps'][0].update(action='fill',target={'label':'主路线'})
+        result=converter.convert(raw,'v3-report')
+        self.assertEqual([s['id'] for s in result['steps']],[2,3,4,5])
+        self.assertEqual([s['id'] for s in result['branches'][0]['steps']],[6,7,8])
+        self.assertEqual(result['branches'][0]['afterStepId'],3)
+        self.assertEqual(result['branches'][1]['afterStepId'],7)
+        self.assertEqual(set(result['parameters']),{'input_2','input_6'})
+        self.assertEqual(result['parameters']['input_6']['requiredWhenBranch'],'no-data')
+
+    def test_windows_reserved_names_are_rejected_on_every_platform(self):
+        for name in ('con','prn','aux','nul','com1','com9','lpt1','lpt9'):
+            with self.subTest(name=name),self.assertRaisesRegex(ValueError,'reserved on Windows'):
+                converter.convert(self.data([{'action':'navigate','url':'https://example.test/'}]),name)
+
     def test_invalid_branch_graphs_are_rejected(self):
         invalid=[]
         raw=self.branched_data();raw['branches'][0]['afterStepId']=999;invalid.append(raw)

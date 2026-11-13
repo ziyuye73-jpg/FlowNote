@@ -1,0 +1,12 @@
+{
+  "name": "flownote",
+  "version": "0.8.1",
+  "private": true,
+  "description": "FlowNote browser recorder for macOS and Windows",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test tests/core.test.cjs teleprompter/tests/core.test.mjs",
+    "test:browser": "node tests/browser-smoke.cjs"
+  },
+  "devDependencies": { "playwright": "1.58.2" }
+}

@@ -48,14 +48,14 @@ const html=`<!doctype html><meta charset="utf-8"><title>WRR isolated fixture</ti
 <h1>经营日报 · 本地测试</h1><form id="report"><label>日期<input id="date" name="report-date"></label>
 <label>密码<input id="password" type="password" name="password"></label>
 <label>验证码<input id="otp" name="otp" autocomplete="one-time-code"></label>
-<label>分类<select id="category"><option value="daily">日报</option><option value="monthly">月报</option></select></label>
+<label>分类<select id="category"><option value="daily">D 日报</option><option value="monthly">M 月报</option></select></label>
 <label>价格<input id="price" type="range" min="0" max="100" value="20"></label>
 <label><input type="checkbox" id="include" name="include">包含退款</label>
 <button type="submit" id="download">生成报表</button></form>
 <ul id="sortable"><li id="item-a" draggable="true">商品 A</li><li id="item-b" draggable="true">商品 B</li></ul>
 <canvas id="board" width="240" height="120"></canvas><div id="scroller"><div class="scroll-content">可滚动内容</div></div>
 <button id="route" onclick="history.pushState({},'', '/route?token=URL-SECRET#private')">切换页面</button>
-<div id="result"></div><script>document.querySelector('form').onsubmit=e=>{e.preventDefault();document.getElementById('result').textContent='报表生成成功'};document.querySelector('#sortable').ondragover=e=>e.preventDefault();document.querySelector('#sortable').ondrop=e=>e.preventDefault();</script>`;
+<textarea id="multiline"></textarea><div id="rich-editor" contenteditable="true"></div><div id="result"></div><script>document.querySelector('form').onsubmit=e=>{e.preventDefault();document.getElementById('result').textContent='报表生成成功'};document.querySelector('#sortable').ondragover=e=>e.preventDefault();document.querySelector('#sortable').ondrop=e=>e.preventDefault();</script>`;
 const frameHtml=`<!doctype html><meta charset="utf-8"><label>标题<input id="frame-title"></label><label>密码<input type="password" id="frame-password"></label><button id="frame-save">保存草稿</button><div contenteditable="true" id="editor"></div>`;
 const server=http.createServer((req,res)=>{res.setHeader('Content-Type','text/html;charset=utf-8');res.end(req.url.startsWith('/frame') ? frameHtml : html);});
 async function poll(fn, predicate, label, timeout=6000) {
@@ -91,12 +91,27 @@ async function poll(fn, predicate, label, timeout=6000) {
     await page.locator('[data-wrr-indicator]').waitFor();
     await popup.reload();await popup.locator('#stop').waitFor();
     await popup.screenshot({path:path.join(output,'ui-recording.png')});
+    await page.locator('#date').focus();
+    for (const modifier of ['Meta','Control','Alt','Shift']) {
+      await page.keyboard.press(`${modifier}+Escape`);
+      await poll(get,s=>s.draft.steps.some(x=>x.action==='manual' && x.reason.includes(modifier)),'modified key '+modifier);
+    }
+    const stateAfterModifiers = await get();
+    assert(!stateAfterModifiers.draft.steps.some(x=>x.action==='keypress' && x.key==='Escape'),'modified Escape must never replay as plain Escape');
+    for (const selector of ['#multiline','#rich-editor']) {
+      await page.locator(selector).focus();
+      await page.keyboard.press('Control+Enter');
+      await poll(get,s=>s.draft.steps.some(x=>x.action==='manual' && x.target.selector===selector && x.reason.includes('Control')),'editor modified Enter '+selector);
+    }
     await page.locator('#date').fill('PRIVATE-EXAMPLE');
     await page.locator('#password').fill('PASSWORD-SECRET');
     await page.locator('#otp').fill('123456');
     await page.locator('#category').focus();
-    await page.locator('#category').press('ArrowDown');
-    await page.locator('#category').press('Tab');
+    await page.keyboard.press('m');
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Tab');
+    assert.equal(await page.locator('#category').inputValue(),'monthly');
+    await poll(get,s=>s.draft.steps.some(x=>x.action==='select'),'native select capture');
     await page.locator('#include').check();
     await page.locator('#download').click();
     const rangeBox=await page.locator('#price').boundingBox();

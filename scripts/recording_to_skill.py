@@ -50,8 +50,10 @@ def normalized_target(value, index):
 def convert(data, name):
     if not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', name) or len(name)>64:
         raise ValueError('Skill name must be lowercase kebab-case, at most 64 characters.')
+    if name in {'con','prn','aux','nul',*(f'com{i}' for i in range(1,10)),*(f'lpt{i}' for i in range(1,10))}:
+        raise ValueError('Skill name is reserved on Windows; choose another name, e.g. daily-report.')
     if not isinstance(data,dict) or data.get('schemaVersion') not in (1,2,3) or data.get('producer') != 'windows-record-replay':
-        raise ValueError('Not a supported Windows Record & Replay recording (v1/v2/v3).')
+        raise ValueError('Not a supported FlowNote recording (v1/v2/v3; producer windows-record-replay).')
     steps = data.get('steps')
     if not isinstance(steps,list) or not steps or len(steps)>1500:
         raise ValueError('Recording must contain between 1 and 1500 steps.')
@@ -107,7 +109,7 @@ def convert(data, name):
         result['branches']=branch_meta
         result['branchPolicy']={'decision':'after-anchor','fallback':'continue-parent','selectedBranch':'replace-parent-remainder','autoRejoin':False}
         outputs.update({b['id']:b['steps'] for b in branch_meta})
-    events=[(rid,raw.get('id') if version==2 else i,raw) for rid,items in routes.items() for i,raw in enumerate(items,1)]
+    events=[(rid,raw.get('id') if version>=2 else i,raw) for rid,items in routes.items() for i,raw in enumerate(items,1)]
     for route_id, index, raw in events:
         if not isinstance(raw,dict) or raw.get('action') not in ACTIONS:
             raise ValueError(f'Unsupported event at step {index}.')
@@ -259,7 +261,7 @@ def main():
         dest,workflow=build(args.recording,args.output,args.name)
     except (ValueError,OSError,TypeError) as error:
         parser.exit(1,f'Error: {error}\n')
-    print(json.dumps({'skillPath':str(dest),'status':workflow['status'],'steps':len(workflow['steps'])+sum(len(b['steps']) for b in workflow.get('branches',[])),'branches':len(workflow.get('branches',[])),'parameters':list(workflow['parameters'])},ensure_ascii=False))
+    print(json.dumps({'skillPath':str(dest),'status':workflow['status'],'steps':len(workflow['steps'])+sum(len(b['steps']) for b in workflow.get('branches',[])),'branches':len(workflow.get('branches',[])),'parameters':list(workflow['parameters'])},ensure_ascii=True))
 
 
 if __name__=='__main__': main()

@@ -179,8 +179,14 @@
   document.addEventListener('keydown',e => {
     if (!recording || !e.isTrusted || !['Enter','Escape'].includes(e.key) || e.isComposing) return;
     const el = e.target;
-    if (!(el instanceof Element) || el.localName === 'textarea' || el.isContentEditable) return;
+    if (!(el instanceof Element)) return;
     if (WRR.sensitive.test([attr(el,'type'),attr(el,'name'),attr(el,'autocomplete')].join(' '))) return;
+    if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) {
+      const combination = [e.metaKey && 'Meta (Command on macOS)', e.ctrlKey && 'Control', e.altKey && 'Alt (Option on macOS)', e.shiftKey && 'Shift', e.key].filter(Boolean).join('+');
+      send({action:'manual',target:target(el),reason:`Modified key ${combination}: confirm the equivalent shortcut on the replay platform and perform it manually.`});
+      return;
+    }
+    if (el.localName === 'textarea' || el.isContentEditable) return;
     send({action:'keypress',target:target(el),key:e.key});
   },true);
   async function refresh() {

@@ -1,9 +1,10 @@
 import { spawn } from 'node:child_process';
+import { chromium } from 'playwright';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-const chromePath = process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+const chromePath = process.env.CHROME_PATH || chromium.executablePath();
 const baseUrl = process.env.APP_URL || 'http://127.0.0.1:4173/';
 const output = process.argv[2] || path.join(process.cwd(), 'tests', 'screenshots');
 const port = 9327;
